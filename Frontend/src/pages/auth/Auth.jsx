@@ -7,14 +7,15 @@ import { Button } from '../../components/ui/button'
 import { toast } from 'sonner'
 import { apiClient } from '../../lib/api-client'
 import { LOGIN_ROUTE, SIGNUP_ROUTE } from '../../utils/constants'
-import axios from 'axios'
 import { useNavigate } from 'react-router-dom'
+import { useAppStore } from '@/store'
 
 const Auth = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const navigate = useNavigate()
+  const { setUserInfo } = useAppStore()
 
   const validateLogin = () => {
     if (!email.length) {
@@ -50,13 +51,22 @@ const Auth = () => {
       if (res.status === 200) {
         navigate('/profile')
       }
+      if (res.data.user.id) {
+        setUserInfo(res.data.user)
+        if (res.data.user.profileSetup) navigate('/chat')
+        else navigate('/profile')
+      }
       console.log(res)
     }
   }
 
   const handleSignup = async () => {
     if (validateSignup()) {
-      const res = await apiClient.post(SIGNUP_ROUTE, { email, password })
+      const res = await apiClient.post(SIGNUP_ROUTE, { email, password }, { withCredentials: true })
+      if (res.status === 201) {
+        setUserInfo(res.data.user)
+        navigate('/profile')
+      }
       console.log(res)
     }
   }
@@ -76,7 +86,7 @@ const Auth = () => {
             <p className='font-medium text-center'>Fill in the details to get started with the best chat app!</p>
           </div>
           <div className='flex items-center justify-center w-full'>
-            <Tabs className='w-3/4'>
+            <Tabs className='w-3/4' defaultValue='login'>
               <TabsList className='bg-transparent rounded-none w-full flex'>
                 <TabsTrigger
                   value='login'
